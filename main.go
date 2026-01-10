@@ -1,7 +1,7 @@
 // -*- coding: utf-8 -*-
 // Copyright 2026(C) goChat Dinnerb0ne<tomma_2022@outlook.com>
 //
-//    Copyright 2026 [Dinnberb0ne]
+//    Copyright 2026 [Dinnerb0ne]
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
