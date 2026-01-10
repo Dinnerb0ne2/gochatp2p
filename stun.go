@@ -17,17 +17,34 @@ const (
 
 // Get public IP and port using STUN
 func getPublicIPAndPort() (string, int, error) {
-	// Try multiple STUN servers
+	// Try multiple STUN servers - ordered by reliability
 	stunServers := []string{
-		"stun.qq.com:19302",
-		"stun.l.google.com:19302",
-		"stun1.l.google.com:19302",
-		"stun2.l.google.com:19302",
+		"stun.l.google.com:19302",      // Google STUN
+		"stun1.l.google.com:19302",     // Google STUN
+		"stun2.l.google.com:19302",     // Google STUN
+		"stun3.l.google.com:19302",     // Google STUN
+		"stun4.l.google.com:19302",     // Google STUN
+		"stun.qq.com:19302",            // QQ STUN
+		"stun.miwifi.com:19302",        // MiWiFi STUN
+		"stun.msn.com:19302",           // MSN STUN
+		"stun.hot-chilli.net:19302",    // Hot-chilli STUN
+		"stun.ekiga.net:3478",          // Ekiga STUN
+		"stun.ideasip.com:3478",        // Ideasip STUN
+		"stun.rixtelecom.se:3478",      // Rixtelecom STUN
+		"stun.schlund.de:3478",         // Schlund STUN
+		"stun.stunprotocol.org:3478",   // STUN protocol STUN
+		"stun.voiparound.com:3478",     // VoIP Around STUN
+		"stun.voipbuster.com:3478",     // VoIP Buster STUN
+		"stun.voipstunt.com:3478",      // VoIP Stunt STUN
+		"stun.voxgratia.org:3478",      // Vox Gratia STUN
+		"stun.xten.com:3478",           // XTen STUN
 	}
 
 	for _, server := range stunServers {
+		fmt.Printf("Trying STUN server: %s\n", server)
 		ip, port, err := sendSTUNRequest(server)
 		if err == nil {
+			fmt.Printf("Successfully connected to STUN server: %s\n", server)
 			return ip, port, nil
 		}
 		fmt.Printf("STUN server %s request failed: %v\n", server, err)
@@ -35,6 +52,7 @@ func getPublicIPAndPort() (string, int, error) {
 
 	// If all STUN servers fail, return local IP and default port
 	localIP := getLocalIP()
+	fmt.Println("All STUN servers failed, using local IP")
 	return localIP, AppConfig.TCPPort, nil
 }
 

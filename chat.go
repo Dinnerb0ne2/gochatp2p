@@ -366,8 +366,12 @@ func (p *P2PChat) RunCLI() {
 			}
 			
 			encodedData := base64.StdEncoding.EncodeToString(fileData)
-			fileMessage := fmt.Sprintf("[File] %s: %s", fileInfo.Name(), encodedData[:min(100, len(encodedData))])
-			if len(encodedData) > 100 {
+			chunkSize := 100
+			if len(encodedData) < chunkSize {
+				chunkSize = len(encodedData)
+			}
+			fileMessage := fmt.Sprintf("[File] %s: %s", fileInfo.Name(), encodedData[:chunkSize])
+			if len(encodedData) > chunkSize {
 				fileMessage += "..."
 			}
 			
@@ -392,12 +396,4 @@ func (p *P2PChat) RunCLI() {
 			fmt.Println("Type 'help' for available commands")
 		}
 	}
-}
-
-// Helper function: min of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

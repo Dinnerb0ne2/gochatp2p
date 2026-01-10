@@ -52,7 +52,7 @@ func (p *P2PChat) listenForBroadcasts() {
 	buffer := make([]byte, 1024)
 	
 	for p.Running {
-		n, _, err := p.UDPSocket.ReadFromUDP(buffer)  // Changed: ignore addr variable
+		n, addr, err := p.UDPSocket.ReadFromUDP(buffer)
 		if err != nil {
 			if p.Running {
 				fmt.Printf("Error reading UDP broadcast: %v\n", err)
@@ -64,6 +64,11 @@ func (p *P2PChat) listenForBroadcasts() {
 		var nodeInfo NodeInfo
 		if err := json.Unmarshal(buffer[:n], &nodeInfo); err != nil {
 			continue
+		}
+		
+		// Update node address if not provided explicitly
+		if nodeInfo.Address == "" {
+			nodeInfo.Address = addr.String()
 		}
 		
 		// Check if node is in room
