@@ -45,7 +45,7 @@ FILE_CHUNK_SIZE=1024            # 文件块大小（字节）
 
 ```bash
 ./p2pchat
-> create myroom
+> /create myroom
 ```
 
 程序将创建名为 `myroom` 的房间，并显示房间密钥：
@@ -60,42 +60,44 @@ Your nickname: [generated nickname]
 
 ```bash
 ./p2pchat
-> join myroom [房间密钥]
+> /join myroom [房间密钥]
 ```
 
 其他节点可以使用房间ID和密钥加入房间。
 
 ### 3. 发送消息
 
+直接输入消息（不带/前缀）即可发送：
+
 ```bash
-> send Hello, everyone!
+> Hello, everyone!
 ```
 
 ### 4. 查看房间节点
 
 ```bash
-> list
+> /list
 ```
 
 ### 5. 其他功能
 
 - `> /save` - 保存聊天记录到文件
 - `> /file [文件路径]` - 发送文件
-- `> help` - 显示帮助信息
-- `> exit` - 退出程序
+- `> /help` - 显示帮助信息
+- `> /exit` - 退出程序
 
 ## 命令说明
 
 | 命令 | 说明 |
 |------|------|
-| `create [房间ID]` | 创建新房间 |
-| `join [房间ID] [密钥]` | 加入指定房间 |
-| `send [消息内容]` | 发送消息 |
-| `list` | 列出房间内节点 |
+| `/create [房间ID]` | 创建新房间 |
+| `/join [房间ID] [密钥]` | 加入指定房间 |
+| `消息内容（无/前缀）` | 发送聊天消息 |
+| `/list` | 列出房间内节点 |
 | `/save` | 保存聊天记录 |
 | `/file [文件路径]` | 发送文件 |
-| `help` | 显示帮助信息 |
-| `exit` | 退出程序 |
+| `/help` | 显示帮助信息 |
+| `/exit` | 退出程序 |
 
 ## 工作原理
 

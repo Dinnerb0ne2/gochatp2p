@@ -16,7 +16,7 @@
 //    limitations under the License.
 //
 // date: 2026-01-10
-// version: 0.3
+// version: 0.4
 // description: A simple P2P chat application in golang
 // LICENSE: Apache-2.0
 

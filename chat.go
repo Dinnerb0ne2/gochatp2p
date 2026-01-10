@@ -196,13 +196,14 @@ func (p *P2PChat) SendMessage(content string) error {
 func (p *P2PChat) RunCLI() {
 	fmt.Println("P2P chat program started!")
 	fmt.Println("Available commands:")
-	fmt.Println("  create [room ID] - Create room")
-	fmt.Println("  join [room ID] [room key] - Join room")
-	fmt.Println("  send [message content] - Send message")
-	fmt.Println("  list - List nodes in room")
-	fmt.Println("  exit - Exit program")
+	fmt.Println("  /create [room ID] - Create room")
+	fmt.Println("  /join [room ID] [room key] - Join room")
+	fmt.Println("  /list - List nodes in room")
 	fmt.Println("  /save - Save chat log")
 	fmt.Println("  /file [file path] - Send file")
+	fmt.Println("  /help - Show this help message")
+	fmt.Println("  /exit - Exit program")
+	fmt.Println("  (Messages without / are sent as chat messages)")
 	
 	scanner := bufio.NewScanner(os.Stdin)
 	
@@ -217,183 +218,186 @@ func (p *P2PChat) RunCLI() {
 			continue
 		}
 		
-		parts := strings.Fields(input)
-		command := strings.ToLower(parts[0])
-		
-		switch command {
-		case "create":
-			if len(parts) < 2 {
-				fmt.Println("Usage: create [room ID]")
-				continue
+		// Check if input is a command (starts with /)
+		if strings.HasPrefix(input, "/") {
+			// Process as command
+			parts := strings.Fields(input)
+			command := strings.ToLower(parts[0])
+			
+			// Remove the leading slash to get the actual command
+			command = command[1:]
+			
+			switch command {
+			case "create":
+				if len(parts) < 2 {
+					fmt.Println("Usage: /create [room ID]")
+					continue
+				}
+				
+				if p.Room.ID != "" {
+					fmt.Println("You are already in a room!")
+					continue
+				}
+				
+				roomID := parts[1]
+				if err := p.CreateRoom(roomID); err != nil {
+					fmt.Printf("Failed to create room: %v\n", err)
+					continue
+				}
+				
+				// Start UDP and TCP services
+				if err := p.StartUDPBroadcast(); err != nil {
+					fmt.Printf("Failed to start UDP broadcast: %v\n", err)
+					continue
+				}
+				
+				if err := p.StartTCPListener(); err != nil {
+					fmt.Printf("Failed to start TCP listener: %v\n", err)
+					continue
+				}
+				
+				fmt.Printf("Room %s created, listening for connections...\n", roomID)
+				
+			case "join":
+				if len(parts) < 3 {
+					fmt.Println("Usage: /join [room ID] [room key]")
+					continue
+				}
+				
+				if p.Room.ID != "" {
+					fmt.Println("You are already in a room!")
+					continue
+				}
+				
+				roomID := parts[1]
+				password := parts[2]
+				
+				if err := p.JoinRoom(roomID, password); err != nil {
+					fmt.Printf("Failed to join room: %v\n", err)
+					continue
+				}
+				
+				// Start UDP and TCP services
+				if err := p.StartUDPBroadcast(); err != nil {
+					fmt.Printf("Failed to start UDP broadcast: %v\n", err)
+					continue
+				}
+				
+				if err := p.StartTCPListener(); err != nil {
+					fmt.Printf("Failed to start TCP listener: %v\n", err)
+					continue
+				}
+				
+				fmt.Printf("Successfully joined room %s, listening for connections...\n", roomID)
+				
+			case "list":
+				if p.Room.ID == "" {
+					fmt.Println("Please create or join a room first!")
+					continue
+				}
+				
+			p.NodeMutex.RLock()
+			fmt.Printf("Nodes in room %s (%d nodes):\n", p.Room.ID, len(p.Room.Nodes))
+			for i, node := range p.Room.Nodes {
+				status := ""
+				if node.Address == p.LocalNode.Address {
+					status = " (you)"
+				}
+				fmt.Printf("  %d. %s (%s)%s\n", i+1, node.Nickname, node.Address, status)
 			}
-			
-			if p.Room.ID != "" {
-				fmt.Println("You are already in a room!")
-				continue
+			p.NodeMutex.RUnlock()
+				
+			case "save":
+				// Save chat log (simplified implementation)
+				timestamp := time.Now().Format("20060102_150405")
+				filename := fmt.Sprintf("chat_log_%s.txt", timestamp)
+				content := fmt.Sprintf("P2P Chat Log - %s\n", time.Now().Format("2006-01-02 15:04:05"))
+				err := os.WriteFile(filename, []byte(content), 0644)
+				if err != nil {
+					fmt.Printf("Failed to save chat log: %v\n", err)
+				} else {
+					fmt.Printf("Chat log saved to %s\n", filename)
+				}
+				
+			case "file":
+				if len(parts) < 2 {
+					fmt.Println("Usage: /file [file path]")
+					continue
+				}
+				
+				filePath := parts[1]
+				fileInfo, err := os.Stat(filePath)
+				if err != nil {
+					fmt.Printf("File does not exist: %s\n", filePath)
+					continue
+				}
+				
+				if fileInfo.IsDir() {
+					fmt.Printf("Cannot send directory: %s\n", filePath)
+					continue
+				}
+				
+				// Simplified file sending (actual implementation should handle file chunks)
+				fmt.Printf("File sending: Preparing to send file %s (size: %d bytes)\n", filePath, fileInfo.Size())
+				
+				// Read file content and encode to base64
+				fileData, err := os.ReadFile(filePath)
+				if err != nil {
+					fmt.Printf("Failed to read file: %v\n", err)
+					continue
+				}
+				
+				encodedData := base64.StdEncoding.EncodeToString(fileData)
+				chunkSize := 100
+				if len(encodedData) < chunkSize {
+					chunkSize = len(encodedData)
+				}
+				fileMessage := fmt.Sprintf("[File] %s: %s", fileInfo.Name(), encodedData[:chunkSize])
+				if len(encodedData) > chunkSize {
+					fileMessage += "..."
+				}
+				
+				if err := p.SendMessage(fileMessage); err != nil {
+					fmt.Printf("Failed to send file info: %v\n", err)
+				} else {
+					fmt.Printf("File info sent\n")
+				}
+				
+			case "help":
+				fmt.Println("Available commands:")
+				fmt.Println("  /create [room ID] - Create room")
+				fmt.Println("  /join [room ID] [room key] - Join room")
+				fmt.Println("  /list - List nodes in room")
+				fmt.Println("  /save - Save chat log")
+				fmt.Println("  /file [file path] - Send file")
+				fmt.Println("  /help - Show this help message")
+				fmt.Println("  /exit - Exit program")
+				fmt.Println("  (Messages without / are sent as chat messages)")
+				
+			case "exit":
+				fmt.Println("Exiting program...")
+				p.Running = false
+				if p.UDPSocket != nil {
+					p.UDPSocket.Close()
+				}
+				os.Exit(0)
+				
+			default:
+				fmt.Printf("Unknown command: %s\n", command)
+				fmt.Println("Type '/help' for available commands")
 			}
-			
-			roomID := parts[1]
-			if err := p.CreateRoom(roomID); err != nil {
-				fmt.Printf("Failed to create room: %v\n", err)
-				continue
-			}
-			
-			// Start UDP and TCP services
-			if err := p.StartUDPBroadcast(); err != nil {
-				fmt.Printf("Failed to start UDP broadcast: %v\n", err)
-				continue
-			}
-			
-			if err := p.StartTCPListener(); err != nil {
-				fmt.Printf("Failed to start TCP listener: %v\n", err)
-				continue
-			}
-			
-			fmt.Printf("Room %s created, listening for connections...\n", roomID)
-			
-		case "join":
-			if len(parts) < 3 {
-				fmt.Println("Usage: join [room ID] [room key]")
-				continue
-			}
-			
-			if p.Room.ID != "" {
-				fmt.Println("You are already in a room!")
-				continue
-			}
-			
-			roomID := parts[1]
-			password := parts[2]
-			
-			if err := p.JoinRoom(roomID, password); err != nil {
-				fmt.Printf("Failed to join room: %v\n", err)
-				continue
-			}
-			
-			// Start UDP and TCP services
-			if err := p.StartUDPBroadcast(); err != nil {
-				fmt.Printf("Failed to start UDP broadcast: %v\n", err)
-				continue
-			}
-			
-			if err := p.StartTCPListener(); err != nil {
-				fmt.Printf("Failed to start TCP listener: %v\n", err)
-				continue
-			}
-			
-			fmt.Printf("Successfully joined room %s, listening for connections...\n", roomID)
-			
-		case "send":
+		} else {
+			// Process as chat message
 			if p.Room.ID == "" {
 				fmt.Println("Please create or join a room first!")
 				continue
 			}
 			
-			if len(parts) < 2 {
-				fmt.Println("Usage: send [message content]")
-				continue
-			}
-			
-			message := strings.Join(parts[1:], " ")
-			if err := p.SendMessage(message); err != nil {
+			// Send the entire input as a message
+			if err := p.SendMessage(input); err != nil {
 				fmt.Printf("Failed to send message: %v\n", err)
 				continue
 			}
-			
-		case "list":
-			if p.Room.ID == "" {
-				fmt.Println("Please create or join a room first!")
-				continue
-			}
-			
-		p.NodeMutex.RLock()
-		fmt.Printf("Nodes in room %s (%d nodes):\n", p.Room.ID, len(p.Room.Nodes))
-		for i, node := range p.Room.Nodes {
-			status := ""
-			if node.Address == p.LocalNode.Address {
-				status = " (you)"
-			}
-			fmt.Printf("  %d. %s (%s)%s\n", i+1, node.Nickname, node.Address, status)
-		}
-		p.NodeMutex.RUnlock()
-			
-		case "exit":
-			fmt.Println("Exiting program...")
-			p.Running = false
-			if p.UDPSocket != nil {
-				p.UDPSocket.Close()
-			}
-			os.Exit(0)
-			
-		case "/save":
-			// Save chat log (simplified implementation)
-			timestamp := time.Now().Format("20060102_150405")
-			filename := fmt.Sprintf("chat_log_%s.txt", timestamp)
-			content := fmt.Sprintf("P2P Chat Log - %s\n", time.Now().Format("2006-01-02 15:04:05"))
-			err := os.WriteFile(filename, []byte(content), 0644)
-			if err != nil {
-				fmt.Printf("Failed to save chat log: %v\n", err)
-			} else {
-				fmt.Printf("Chat log saved to %s\n", filename)
-			}
-			
-		case "/file":
-			if len(parts) < 2 {
-				fmt.Println("Usage: /file [file path]")
-				continue
-			}
-			
-			filePath := parts[1]
-			fileInfo, err := os.Stat(filePath)
-			if err != nil {
-				fmt.Printf("File does not exist: %s\n", filePath)
-				continue
-			}
-			
-			if fileInfo.IsDir() {
-				fmt.Printf("Cannot send directory: %s\n", filePath)
-				continue
-			}
-			
-			// Simplified file sending (actual implementation should handle file chunks)
-			fmt.Printf("File sending: Preparing to send file %s (size: %d bytes)\n", filePath, fileInfo.Size())
-			
-			// Read file content and encode to base64
-			fileData, err := os.ReadFile(filePath)
-			if err != nil {
-				fmt.Printf("Failed to read file: %v\n", err)
-				continue
-			}
-			
-			encodedData := base64.StdEncoding.EncodeToString(fileData)
-			chunkSize := 100
-			if len(encodedData) < chunkSize {
-				chunkSize = len(encodedData)
-			}
-			fileMessage := fmt.Sprintf("[File] %s: %s", fileInfo.Name(), encodedData[:chunkSize])
-			if len(encodedData) > chunkSize {
-				fileMessage += "..."
-			}
-			
-			if err := p.SendMessage(fileMessage); err != nil {
-				fmt.Printf("Failed to send file info: %v\n", err)
-			} else {
-				fmt.Printf("File info sent\n")
-			}
-			
-		case "help":
-			fmt.Println("Available commands:")
-			fmt.Println("  create [room ID] - Create room")
-			fmt.Println("  join [room ID] [room key] - Join room")
-			fmt.Println("  send [message content] - Send message")
-			fmt.Println("  list - List nodes in room")
-			fmt.Println("  exit - Exit program")
-			fmt.Println("  /save - Save chat log")
-			fmt.Println("  /file [file path] - Send file")
-			
-		default:
-			fmt.Printf("Unknown command: %s\n", command)
-			fmt.Println("Type 'help' for available commands")
 		}
 	}
 }
