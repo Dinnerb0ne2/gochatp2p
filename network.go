@@ -83,6 +83,13 @@ func (p *P2PChat) listenForBroadcasts() {
 		// Add to room if not already present and not self
 		if !isRoomNode && nodeInfo.ID != p.LocalNode.Address {
 			p.NodeMutex.Lock()
+			// Check if node limit is reached
+			if len(p.Room.Nodes) >= AppConfig.MaxNodes {
+				fmt.Printf("[System] Node limit (%d) reached, ignoring new node %s (%s)\n", 
+					AppConfig.MaxNodes, nodeInfo.Nickname, nodeInfo.Address)
+				p.NodeMutex.Unlock()
+				continue
+			}
 			p.Room.Nodes = append(p.Room.Nodes, nodeInfo)
 			p.NodeMutex.Unlock()
 			
