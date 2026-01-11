@@ -6,3 +6,4 @@ DEFAULT_ADJECTIVES=Cool,Smart,Fast,Lucky,Brave,Clever,Quick,Sharp,Bright,Wise
 DEFAULT_NOUNS=Tiger,Eagle,Wolf,Fox,Bear,Hawk,Lion,Shark,Horse,Owl
 MAX_NODES=100
 FILE_CHUNK_SIZE=1024
+NO_SUPER_NODE=false

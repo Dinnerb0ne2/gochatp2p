@@ -8,6 +8,7 @@
 - **NAT穿透**：使用STUN协议实现跨局域网通信
 - **消息加密**：AES-128对称加密确保消息安全
 - **房间系统**：支持创建和加入聊天房间
+- **SuperNode模式**：智能节点管理，优化大规模网络通信
 - **配置文件**：支持自定义配置参数
 - **跨平台**：支持Windows、Linux、macOS
 
@@ -37,6 +38,7 @@ DEFAULT_NOUNS=Tiger,Eagle,Wolf,Fox,Bear,Hawk,Lion,Shark,Horse,Owl
                                 # 生成昵称的名词列表
 MAX_NODES=100                   # 最大节点数
 FILE_CHUNK_SIZE=1024            # 文件块大小（字节）
+NO_SUPER_NODE=false             # 是否禁用成为SuperNode（适用于性能较低的设备）
 ```
 
 ## 使用方法
@@ -106,6 +108,15 @@ Your nickname: [generated nickname]
 1. **节点发现**：使用UDP广播在局域网内发现其他节点
 2. **NAT穿透**：通过STUN服务器获取公网IP和端口，实现跨局域网通信
 3. **消息传输**：使用TCP协议保证消息可靠传输
+
+### SuperNode模式
+
+当房间内节点数量超过10个时，系统会自动启用SuperNode模式：
+
+1. **SuperNode选举**：从前5个节点中随机选择一个作为SuperNode（除非该节点设置了NO_SUPER_NODE=true）
+2. **消息转发**：普通节点将消息发送给SuperNode，由SuperNode转发给其他节点
+3. **去中心化管理**：如果有SuperNode离线，系统会自动选举新的SuperNode
+4. **性能优化**：减少每个节点需要建立的连接数，从O(n)降低到更优的复杂度
 
 ### 消息加密
 

@@ -7,7 +7,7 @@
 //    you may not use this file except in compliance with the License.
 //    You may obtain a copy of the License at
 //
-//        http://www.apache.org/licenses/LICENSE-2.0 
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
 //    Unless required by applicable law or agreed to in writing, software
 //    distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,14 +33,15 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	TCPPort          int
-	UDPPort          int
-	BroadcastTimeout time.Duration
-	DefaultNickname  string
+	TCPPort           int
+	UDPPort           int
+	BroadcastTimeout  time.Duration
+	DefaultNickname   string
 	DefaultAdjectives []string
-	DefaultNouns     []string
-	MaxNodes         int
-	FileChunkSize    int
+	DefaultNouns      []string
+	MaxNodes          int
+	FileChunkSize     int
+	NoSuperNode       bool
 }
 
 // AppConfig holds the application-wide configuration instance
@@ -54,15 +55,16 @@ func LoadConfig() *Config {
 		UDPPort:          8081,
 		BroadcastTimeout: 5 * time.Second,
 		DefaultAdjectives: []string{
-			"Cool", "Smart", "Fast", "Lucky", "Brave", 
+			"Cool", "Smart", "Fast", "Lucky", "Brave",
 			"Clever", "Quick", "Sharp", "Bright", "Wise",
 		},
 		DefaultNouns: []string{
-			"Tiger", "Eagle", "Wolf", "Fox", "Bear", 
+			"Tiger", "Eagle", "Wolf", "Fox", "Bear",
 			"Hawk", "Lion", "Shark", "Horse", "Owl",
 		},
 		MaxNodes:      100,
 		FileChunkSize: 1024,
+		NoSuperNode:   false, // 默认为false，允许成为SuperNode
 	}
 
 	// Try to read config from file
@@ -121,6 +123,8 @@ func LoadConfig() *Config {
 			if chunkSize, err := strconv.Atoi(value); err == nil {
 				config.FileChunkSize = chunkSize
 			}
+		case "NO_SUPER_NODE":
+			config.NoSuperNode = strings.ToLower(value) == "true"
 		}
 	}
 
