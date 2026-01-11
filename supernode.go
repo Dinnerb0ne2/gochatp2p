@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-// SuperNodeInfo 保存SuperNode的信息
+// SuperNodeInfo stores information about a SuperNode
 type SuperNodeInfo struct {
 	NodeInfo
 	IsSuperNode bool      `json:"is_super_node"`
 	LastActive  time.Time `json:"last_active"`
 }
 
-// SuperNodeManager SuperNode管理器
+// SuperNodeManager SuperNode manager
 type SuperNodeManager struct {
 	mu            sync.RWMutex
 	supernodes    []SuperNodeInfo
@@ -25,10 +25,10 @@ type SuperNodeManager struct {
 	udpPort       int
 	isSuperNode   bool
 	noSuperNode   bool
-	superNodeMode bool // 是否启用SuperNode模式
+	superNodeMode bool // Whether to enable SuperNode mode
 }
 
-// NewSuperNodeManager 创建新的SuperNode管理器
+// NewSuperNodeManager creates a new SuperNode manager
 func NewSuperNodeManager(localNode NodeInfo, messageKey []byte, tcpPort, udpPort int, noSuperNode bool) *SuperNodeManager {
 	return &SuperNodeManager{
 		localNodeInfo: localNode,
@@ -36,53 +36,53 @@ func NewSuperNodeManager(localNode NodeInfo, messageKey []byte, tcpPort, udpPort
 		tcpPort:       tcpPort,
 		udpPort:       udpPort,
 		noSuperNode:   noSuperNode,
-		superNodeMode: true, // 默认启用SuperNode模式
+		superNodeMode: true, // Enable SuperNode mode by default
 	}
 }
 
-// IsSuperNodeModeEnabled 检查是否启用SuperNode模式
+// IsSuperNodeModeEnabled checks if SuperNode mode is enabled
 func (sm *SuperNodeManager) IsSuperNodeModeEnabled() bool {
 	return sm.superNodeMode
 }
 
-// ShouldEnableSuperNodeMode 根据节点数量判断是否应该启用SuperNode模式
+// ShouldEnableSuperNodeMode determines whether SuperNode mode should be enabled based on node count
 func (sm *SuperNodeManager) ShouldEnableSuperNodeMode(nodeCount int) bool {
 	return sm.superNodeMode && nodeCount > 5
 }
 
-// SetSuperNodeMode 设置SuperNode模式
+// SetSuperNodeMode sets SuperNode mode
 func (sm *SuperNodeManager) SetSuperNodeMode(enabled bool) {
 	sm.superNodeMode = enabled
 }
 
-// IsLocalNodeSuperNode 检查本地节点是否为SuperNode
+// IsLocalNodeSuperNode checks if the local node is a SuperNode
 func (sm *SuperNodeManager) IsLocalNodeSuperNode() bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.isSuperNode
 }
 
-// SetLocalNodeAsSuperNode 设置本地节点为SuperNode
+// SetLocalNodeAsSuperNode sets the local node as a SuperNode
 func (sm *SuperNodeManager) SetLocalNodeAsSuperNode(isSuperNode bool) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.isSuperNode = isSuperNode
 }
 
-// IsNoSuperNode 检查是否配置为不成为SuperNode
+// IsNoSuperNode checks if the node is configured not to become a SuperNode
 func (sm *SuperNodeManager) IsNoSuperNode() bool {
 	return sm.noSuperNode
 }
 
-// AddNode 添加节点到SuperNode列表
+// AddNode adds a node to the SuperNode list
 func (sm *SuperNodeManager) AddNode(nodeInfo NodeInfo) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	// 检查节点是否已存在
+	// Check if node already exists
 	for i, sn := range sm.supernodes {
 		if sn.ID == nodeInfo.ID {
-			// 更新最后活跃时间和其他信息
+			// Update last active time and other info
 			sm.supernodes[i].Address = nodeInfo.Address
 			sm.supernodes[i].Nickname = nodeInfo.Nickname
 			sm.supernodes[i].NoSuperNode = nodeInfo.NoSuperNode
@@ -91,16 +91,16 @@ func (sm *SuperNodeManager) AddNode(nodeInfo NodeInfo) {
 		}
 	}
 
-	// 添加新节点
+	// Add new node
 	superNodeInfo := SuperNodeInfo{
 		NodeInfo:    nodeInfo,
-		IsSuperNode: false, // 默认不是SuperNode
+		IsSuperNode: false, // Default is not a SuperNode
 		LastActive:  time.Now(),
 	}
 	sm.supernodes = append(sm.supernodes, superNodeInfo)
 }
 
-// SetAsSuperNode 将指定节点设为SuperNode
+// SetAsSuperNode sets the specified node as a SuperNode
 func (sm *SuperNodeManager) SetAsSuperNode(nodeID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -114,14 +114,14 @@ func (sm *SuperNodeManager) SetAsSuperNode(nodeID string) {
 	}
 }
 
-// GetSuperNodes 获取所有活跃的SuperNodes
+// GetSuperNodes gets all active SuperNodes
 func (sm *SuperNodeManager) GetSuperNodes() []SuperNodeInfo {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	// 过滤掉超时的节点
+	// Filter out timed-out nodes
 	var activeSuperNodes []SuperNodeInfo
-	timeout := 30 * time.Second // 超时30秒
+	timeout := 30 * time.Second // 30 second timeout
 	for _, sn := range sm.supernodes {
 		if time.Since(sn.LastActive) < timeout && sn.IsSuperNode {
 			activeSuperNodes = append(activeSuperNodes, sn)
@@ -131,13 +131,13 @@ func (sm *SuperNodeManager) GetSuperNodes() []SuperNodeInfo {
 	return activeSuperNodes
 }
 
-// GetRegularNodes 获取所有普通节点
+// GetRegularNodes gets all regular nodes
 func (sm *SuperNodeManager) GetRegularNodes() []NodeInfo {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
 	var regularNodes []NodeInfo
-	timeout := 30 * time.Second // 超时30秒
+	timeout := 30 * time.Second // 30 second timeout
 	for _, sn := range sm.supernodes {
 		if time.Since(sn.LastActive) < timeout && !sn.IsSuperNode {
 			regularNodes = append(regularNodes, sn.NodeInfo)
@@ -147,7 +147,7 @@ func (sm *SuperNodeManager) GetRegularNodes() []NodeInfo {
 	return regularNodes
 }
 
-// GetNode 获取指定节点信息
+// GetNode gets the specified node info
 func (sm *SuperNodeManager) GetNode(nodeID string) *SuperNodeInfo {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
@@ -161,7 +161,7 @@ func (sm *SuperNodeManager) GetNode(nodeID string) *SuperNodeInfo {
 	return nil
 }
 
-// RemoveNode 移除节点
+// RemoveNode removes a node
 func (sm *SuperNodeManager) RemoveNode(nodeID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -174,7 +174,7 @@ func (sm *SuperNodeManager) RemoveNode(nodeID string) {
 	}
 }
 
-// UpdateNodeActivity 更新节点活跃时间
+// UpdateNodeActivity updates node activity time
 func (sm *SuperNodeManager) UpdateNodeActivity(nodeID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -187,19 +187,19 @@ func (sm *SuperNodeManager) UpdateNodeActivity(nodeID string) {
 	}
 }
 
-// SelectInitialSuperNode 从前5个节点中随机选择一个作为初始SuperNode
+// SelectInitialSuperNode randomly selects one as the initial SuperNode from the first 5 nodes
 func (sm *SuperNodeManager) SelectInitialSuperNode() string {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	// 从前5个节点中选择
+	// Select from first 5 nodes
 	var candidates []SuperNodeInfo
 	count := 0
 	for _, sn := range sm.supernodes {
 		if count >= 5 {
 			break
 		}
-		// 不选择配置为noSuperNode的节点
+		// Don't select nodes configured with noSuperNode
 		if sn.ID != sm.localNodeInfo.Address {
 			nodeIsNoSuperNode := sm.checkIfNodeIsNoSuperNode(sn.ID)
 			if !nodeIsNoSuperNode {
@@ -213,11 +213,11 @@ func (sm *SuperNodeManager) SelectInitialSuperNode() string {
 		return ""
 	}
 
-	// 随机选择一个（使用当前时间作为随机源）
+	// Randomly select one (using current time as random source)
 	index := int(time.Now().Unix()) % len(candidates)
 	selectedID := candidates[index].ID
 
-	// 设置为SuperNode
+	// Set as SuperNode
 	for i, sn := range sm.supernodes {
 		if sn.ID == selectedID {
 			sm.supernodes[i].IsSuperNode = true
@@ -232,7 +232,7 @@ func (sm *SuperNodeManager) SelectInitialSuperNode() string {
 	return selectedID
 }
 
-// 检查节点是否配置为noSuperNode
+// checkIfNodeIsNoSuperNode checks if the node is configured as noSuperNode
 func (sm *SuperNodeManager) checkIfNodeIsNoSuperNode(nodeID string) bool {
 	nodeInfo := sm.GetNode(nodeID)
 	if nodeInfo != nil {
@@ -241,15 +241,15 @@ func (sm *SuperNodeManager) checkIfNodeIsNoSuperNode(nodeID string) bool {
 	return false
 }
 
-// HandleNodeLeave 处理节点离开事件
+// HandleNodeLeave handles the node leave event
 func (sm *SuperNodeManager) HandleNodeLeave(nodeID string) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	// 移除节点
+	// Remove node
 	for i, sn := range sm.supernodes {
 		if sn.ID == nodeID {
-			// 如果离开的是SuperNode，需要选举新的SuperNode
+			// If the leaving node is a SuperNode, need to elect a new SuperNode
 			if sn.IsSuperNode {
 				sm.handleSuperNodeLeave()
 			}
@@ -260,9 +260,9 @@ func (sm *SuperNodeManager) HandleNodeLeave(nodeID string) {
 	}
 }
 
-// handleSuperNodeLeave 处理SuperNode离开事件
+// handleSuperNodeLeave handles the SuperNode leave event
 func (sm *SuperNodeManager) handleSuperNodeLeave() {
-	// 检查是否还有其他活跃的SuperNode
+	// Check if there are other active SuperNodes
 	activeSuperNodes := 0
 	for _, sn := range sm.supernodes {
 		if sn.IsSuperNode && time.Since(sn.LastActive) < 30*time.Second {
@@ -270,15 +270,15 @@ func (sm *SuperNodeManager) handleSuperNodeLeave() {
 		}
 	}
 
-	// 如果没有其他SuperNode了，需要选举一个新的
-	if activeSuperNodes <= 1 { // 当前离开的SuperNode也计算在内
+	// If no other SuperNodes, need to elect a new one
+	if activeSuperNodes <= 1 { // The leaving SuperNode is also counted
 		sm.selectNewSuperNode()
 	}
 }
 
-// selectNewSuperNode 选择新的SuperNode
+// selectNewSuperNode selects a new SuperNode
 func (sm *SuperNodeManager) selectNewSuperNode() {
-	// 从活跃的普通节点中选择一个新的SuperNode
+	// Select a new SuperNode from active regular nodes
 	timeout := 30 * time.Second
 	for i, sn := range sm.supernodes {
 		if !sn.IsSuperNode &&
@@ -286,7 +286,7 @@ func (sm *SuperNodeManager) selectNewSuperNode() {
 			sn.ID != sm.localNodeInfo.Address {
 			nodeIsNoSuperNode := sm.checkIfNodeIsNoSuperNode(sn.ID)
 			if !nodeIsNoSuperNode {
-				// 设置为SuperNode
+				// Set as SuperNode
 				sm.supernodes[i].IsSuperNode = true
 				sm.supernodes[i].LastActive = time.Now()
 				return
@@ -294,19 +294,19 @@ func (sm *SuperNodeManager) selectNewSuperNode() {
 		}
 	}
 
-	// 如果没有合适的普通节点，且本地节点不设置为noSuperNode，则本地节点成为SuperNode
+	// If no suitable regular node and local node is not set as noSuperNode, then local node becomes SuperNode
 	if !sm.noSuperNode && !sm.isSuperNode {
 		sm.isSuperNode = true
 	}
 }
 
-// ForwardMessageToSuperNodes 将消息转发给SuperNodes
+// ForwardMessageToSuperNodes forwards messages to SuperNodes
 func (sm *SuperNodeManager) ForwardMessageToSuperNodes(message Message, messageKey []byte) error {
 	superNodes := sm.GetSuperNodes()
 
 	for _, superNode := range superNodes {
 		if superNode.Address == sm.localNodeInfo.Address {
-			continue // 不发送给自己
+			continue // Don't send to self
 		}
 
 		go func(nodeAddr string) {
@@ -317,14 +317,14 @@ func (sm *SuperNodeManager) ForwardMessageToSuperNodes(message Message, messageK
 			}
 			defer conn.Close()
 
-			// 序列化消息
+			// Serialize message
 			messageData, err := json.Marshal(message)
 			if err != nil {
 				fmt.Printf("Failed to serialize message: %v\n", err)
 				return
 			}
 
-			// 加密消息
+			// Encrypt message
 			encryptedData, err := encryptAES(messageKey, messageData)
 			if err != nil {
 				fmt.Printf("Failed to encrypt message: %v\n", err)
@@ -341,13 +341,13 @@ func (sm *SuperNodeManager) ForwardMessageToSuperNodes(message Message, messageK
 	return nil
 }
 
-// GetBestSuperNodeForConnection 获取最佳的SuperNode进行连接
+// GetBestSuperNodeForConnection gets the best SuperNode for connection
 func (sm *SuperNodeManager) GetBestSuperNodeForConnection() *SuperNodeInfo {
 	superNodes := sm.GetSuperNodes()
 	if len(superNodes) == 0 {
 		return nil
 	}
 
-	// 返回第一个SuperNode（可以实现更复杂的负载均衡算法）
+	// Return the first SuperNode (can implement more complex load balancing algorithm)
 	return &superNodes[0]
 }

@@ -64,7 +64,7 @@ func LoadConfig() *Config {
 		},
 		MaxNodes:      100,
 		FileChunkSize: 1024,
-		NoSuperNode:   false, // 默认为false，允许成为SuperNode
+		NoSuperNode:   false, // default is false
 	}
 
 	// Try to read config from file

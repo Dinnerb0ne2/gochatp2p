@@ -28,7 +28,7 @@ type NodeInfo struct {
 	ID          string `json:"id"`
 	Address     string `json:"address"`
 	Nickname    string `json:"nickname"`
-	NoSuperNode bool   `json:"no_super_node,omitempty"` // 表示该节点不参与SuperNode选举
+	NoSuperNode bool   `json:"no_super_node,omitempty"` // Indicates that this node does not participate in SuperNode election
 }
 
 // Room info structure
